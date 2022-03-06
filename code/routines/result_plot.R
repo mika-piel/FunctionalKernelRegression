@@ -1,6 +1,6 @@
 res_plot <- function(response, predicted, mean_squared_error, label){
   # Function to plot true responses against predicted/estimated responses
-  # while showing the ASPE as a title
+  # while showing the ASPE in the plot title
   plot_df <- as.data.frame(cbind(response, predicted))
   colnames(plot_df) <- c("True", "Predicted")
   plot <- ggplot(data=plot_df, aes(x=True, y=Predicted)) +
