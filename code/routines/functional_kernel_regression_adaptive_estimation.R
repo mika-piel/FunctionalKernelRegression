@@ -1,4 +1,4 @@
-adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2", kernel = "box", h_length = 20){
+adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2", kernel = "triangle", h_length = 20){
   # This function performs functional kernel regression with adaptive bandwidth
   # estimation as presented in Chagny & Roche (2016)
   
