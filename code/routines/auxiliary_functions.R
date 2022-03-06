@@ -140,11 +140,12 @@ sigma_hat <- function(d_curves, y, kernel, H_n)
 
 
 # The following three function concerning the (semi-)metrics were taken from
-# the accompanying material of Ferraty and Vieu (2006) and can be found here:
-# http://www.math.univ-toulouse.fr/staph/npfda/
+# the accompanying material of Ferraty and Vieu (2006) and slightly adapted.
+# The code can be found here: http://www.math.univ-toulouse.fr/staph/npfda/
   
-semimetric.L2 = function(curves1, curves2)
+d_L2 = function(curves1, curves2)
 {
+  # # From http://www.math.univ-toulouse.fr/staph/npfda/ by Ferraty and Vieu (2006)
   # Computes the approximated L2-distance between two curves stored in two 
   # datasets
   #    "curves1" matrix contains a first set of curves stored row by row
@@ -159,58 +160,57 @@ semimetric.L2 = function(curves1, curves2)
   return(sqrt(d))
 }
 
-semimetric.deriv <- function(DATA1, DATA2, q, nknot, range.grid)
+d_deriv <- function(curves1, curves2, q, nknot, grid_range)
 {
-  ###############################################################
+  # From http://www.math.univ-toulouse.fr/staph/npfda/ by Ferraty and Vieu (2006)
   # Computes a semimetric between curves based on their derivatives.
-  #    "DATA1" matrix containing a first set of curves stored row by row
-  #    "DATA2" matrix containing a second set of curves stored row by row
+  #    "curves1" matrix containing a first set of curves stored row by row
+  #    "curves2" matrix containing a second set of curves stored row by row
   #    "q" order of derivation
   #    "nknot" number of interior knots (needed for defining the B-spline basis)
-  #    "range.grid" vector of length 2 containing the range of the grid at 
+  #    "grid_range" vector of length 2 containing the range of the grid at 
   #                 which the curve are evaluated (i.e. range of the 
   #                 discretization)
   # Returns a "semimetric" matrix containing the semimetric computed 
   # between the curves lying to the first sample and the curves lying  
   # to the second one.
-  ###############################################################
-  library(splines)
-  if(is.vector(DATA1)) DATA1 <- as.matrix(t(DATA1))
-  if(is.vector(DATA2)) DATA2 <- as.matrix(t(DATA2))
-  testfordim <- sum(dim(DATA1)==dim(DATA2))==2
+
+  if(is.vector(curves1)) curves1 <- as.matrix(t(curves1))
+  if(is.vector(curves2)) curves2 <- as.matrix(t(curves2))
+  testfordim <- sum(dim(curves1)==dim(curves2))==2
   twodatasets <- T
-  if(testfordim) twodatasets <- sum(DATA1==DATA2)!=prod(dim(DATA1))
-  #####################################################################
+  if(testfordim) twodatasets <- sum(curves1==curves2)!=prod(dim(curves1))
+
   # B-spline approximation of the curves containing in DATASET :
   # -----------------------------------------------------------
   # "knot" and "x" allow to define the B-spline basis
   # "coef.mat1[, i]" corresponds to the B-spline expansion
   # of the discretized curve contained in DATASET[i, ]. 
-  # The B-spline approximation of the curve contained in "DATA1[i, ]" 
+  # The B-spline approximation of the curve contained in "curves1[i, ]" 
   # is given by "Bspline %*% coef.mat1[, i]"
-  #####################################################################
-  p <- ncol(DATA1)
-  a <- range.grid[1]
-  b <- range.grid[2]
+  
+  p <- ncol(curves1)
+  a <- grid_range[1]
+  b <- grid_range[2]
   x <- seq(a, b, length = p)
   order.Bspline <- q + 3
   nknotmax <- (p - order.Bspline - 1)%/%2
   if(nknot > nknotmax){
-    stop(paste("give a number nknot smaller than ",nknotmax, " for avoiding ill-conditioned matrix"))
+    stop(paste("give a number nknot smaller than ", nknotmax, " for avoiding ill-conditioned matrix"))
   }
   Knot <- seq(a, b, length = nknot + 2)[ - c(1, nknot + 2)]
   delta <- sort(c(rep(c(a, b), order.Bspline), Knot))
   Bspline <- splineDesign(delta, x, order.Bspline)
   Cmat <- crossprod(Bspline)
-  Dmat1 <- crossprod(Bspline, t(DATA1))
+  Dmat1 <- crossprod(Bspline, t(curves1))
   coef.mat1 <- symsolve(Cmat, Dmat1)
-  #######################################################################
+  
   # Numerical integration by the Gauss method :
   # -------------------------------------------
   # The objects ending by "gauss" allow us to compute numerically  
   # integrals by means the "Gauss method" (lx.gauss=6 ==> the computation 
   # of the integral is exact for polynom of degree less or equal to 11).
-  #######################################################################
+  
   point.gauss <- c(-0.9324695142, -0.6612093865, -0.2386191861, 
                    0.2386191861, 0.6612093865, 0.9324695142)
   weight.gauss <- c(0.1713244924, 0.360761573, 0.4679139346, 0.4679139346,0.360761573, 0.1713244924)
@@ -221,54 +221,53 @@ semimetric.deriv <- function(DATA1, DATA2, q, nknot, range.grid)
   eigH <- eigen(H, sym = T)
   eigH$values[eigH$values < 0] <- 0
   Hhalf <- t(eigH$vectors %*% (t(eigH$vectors) * sqrt(eigH$values)))
-  COEF1 <- t(Hhalf %*% coef.mat1)
+  coef1 <- t(Hhalf %*% coef.mat1)
   if(twodatasets){
-    Dmat2 <- crossprod(Bspline, t(DATA2))
+    Dmat2 <- crossprod(Bspline, t(curves2))
     coef.mat2 <- symsolve(Cmat, Dmat2)
-    COEF2 <- t(Hhalf %*% coef.mat2)
+    coef2 <- t(Hhalf %*% coef.mat2)
   } else {
-    COEF2 <- COEF1
+    coef2 <- coef1
   }
-  SEMIMETRIC <- 0
+  d <- 0
   nbasis <- nrow(H)
   for(f in 1:nbasis)
-    SEMIMETRIC <- SEMIMETRIC + outer(COEF1[, f], COEF2[, f], "-")^2
-  return(sqrt(SEMIMETRIC))
+    d <- d + outer(coef1[, f], coef2[, f], "-")^2
+  return(sqrt(d))
 }
 
-semimetric.pca <- function(DATA1, DATA2, q)
+d_pca <- function(curves1, curves2, q)
 {
-  ###############################################################
+  # From http://www.math.univ-toulouse.fr/staph/npfda/ by Ferraty and Vieu (2006)
   # Computes between curves a pca-type semimetric based on the
   # functional principal components analysis method.
-  #    "DATA1" matrix containing a first set of curves stored row by row
-  #    "DATA2" matrix containing a second set of curves stored row by row
+  #    "curves1" matrix containing a first set of curves stored row by row
+  #    "curves2" matrix containing a second set of curves stored row by row
   #    "q" the retained number of principal components
   # Returns a "semimetric" matrix containing the semimetric computed 
   # between the curves lying to the first sample and the curves lying  
   # to the second one.
-  ###############################################################
-  if(is.vector(DATA1)) DATA1 <- as.matrix(t(DATA1))
-  if(is.vector(DATA2)) DATA2 <- as.matrix(t(DATA2))
-  testfordim <- sum(dim(DATA1)==dim(DATA2))==2
+  
+  if(is.vector(curves1)) curves1 <- as.matrix(t(curves1))
+  if(is.vector(curves2)) curves2 <- as.matrix(t(curves2))
+  testfordim <- sum(dim(curves1)==dim(curves2))==2
   twodatasets <- T
-  if(testfordim) twodatasets <- sum(DATA1==DATA2)!=prod(dim(DATA1))
-  qmax <- ncol(DATA1)
+  if(testfordim) twodatasets <- sum(curves1==curves2)!=prod(dim(curves1))
+  qmax <- ncol(curves1)
   if(q > qmax) stop(paste("give a integer q smaller than ", qmax))
-  n <- nrow(DATA1)
-  COVARIANCE <- t(DATA1) %*% DATA1/n
-  EIGENVECTORS <- eigen(COVARIANCE, sym = T)$vectors[, 1:q]
-  COMPONENT1 <- DATA1 %*% EIGENVECTORS
+  n <- nrow(curves1)
+  cov <- t(curves1) %*% curves1/n
+  eigenvecs <- eigen(cov, sym = T)$vectors[, 1:q]
+  comp1 <- curves1 %*% eigenvecs
   if(twodatasets) {
-    COMPONENT2 <- DATA2 %*% EIGENVECTORS
+    comp2 <- curves2 %*% eigenvecs
   }
   else {
-    COMPONENT2 <- COMPONENT1
+    comp2 <- comp1
   }
-  SEMIMETRIC <- 0
-  for(qq in 1:q)
-    SEMIMETRIC <- SEMIMETRIC + outer(COMPONENT1[, qq], COMPONENT2[, 
-                                                                  qq], "-")^2
-  return(sqrt(SEMIMETRIC))
+  d <- 0
+  for(k in 1:q)
+    d <- d + outer(comp1[, k], comp2[, k], "-")^2
+  return(sqrt(d))
 }
 
