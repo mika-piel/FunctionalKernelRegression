@@ -1,4 +1,4 @@
-# Plot S and R curves for comparison, see Figure 4.1
+# Plot smooth and rough curves for comparison, see Figure 4.1
 
 # Load necessary packages
 library(dplyr)
