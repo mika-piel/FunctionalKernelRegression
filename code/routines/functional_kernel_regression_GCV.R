@@ -2,7 +2,7 @@ functional_kernel_regression_GCV <- function(y, curves, pred_curves, ..., d = "d
 {
   # This function performs functional kernel regression with global
   # cross-validated bandwidths automatically selected as presented in
-  # Rachdi & Vieu (2007)
+  # Rachdi & Vieu (2006)
   
   # y: Training set responses (as numerical vector)
   # curves: Training set curves (stored in a numerical matrix)
