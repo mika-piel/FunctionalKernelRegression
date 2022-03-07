@@ -1,5 +1,6 @@
 # Script for plotting the covariables from Chapter 4, Figures 4.2, 4.3 and 4.4
 
+# Load necessary packages
 library(dplyr)
 library(tidyr)
 library(ggplot2)
