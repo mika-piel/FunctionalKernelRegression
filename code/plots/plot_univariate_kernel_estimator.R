@@ -15,8 +15,8 @@ y <- sin(2*x)- exp(x^3) + eps
 
 # Plot the estimators and observed data
 plot(x,y,pch = 20,xlab ="X", ylab = "Y",cex = 0.6,cex.axis = 1, cex.lab =1.2, cex.main = 1.2)
-fit01 <- ksmooth(x,y, bandwidth=0.04)
-lines(fit01$x,fit01$y, col = "cyan4")
-fit05 <- ksmooth(x,y, bandwidth = 0.4)
-lines(fit05$x, fit05$y, col = "indianred2")
+fit004 <- ksmooth(x,y, bandwidth=0.04)
+lines(fit004$x,fit004$y, col = "cyan4")
+fit04 <- ksmooth(x,y, bandwidth = 0.4)
+lines(fit04$x, fit04$y, col = "indianred2")
 legend("bottomleft", cex = 1,  legend = c("0.04", "0.4"), col = c("cyan4", "indianred2"), lty =1, title = "Bandwidths")
