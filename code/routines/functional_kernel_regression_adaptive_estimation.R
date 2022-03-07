@@ -1,6 +1,14 @@
-adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2", kernel = "triangle", h_length = 20){
+adaptive_functional_regression <- function(y, curves, pred_curves, ...,  d = "L2", kernel = "triangle", h_length = 20){
   # This function performs functional kernel regression with adaptive bandwidth
   # estimation as presented in Chagny & Roche (2016)
+  
+  # y: Training set responses (as numerical vector)
+  # curves: Training set curves (stored in a numerical matrix)
+  # pred_curves: Test set curves (stored in a numerical matrix)
+  # d: Choice of (semi-)metric (either "deriv", "pca" or "L2")
+  # kernel: Choice of kernel (either "box", "quadratic" or "triangle")
+  # h_length: Length of each row of the bandwidth matrix
+  # ...: Additional arguments partly needed for the (semi-)metrics
   
   # Fixed constant in the estimated variance term (see Chagny & Roche Appendix A Section 1.1)
   kappa <- 0.1
@@ -10,7 +18,7 @@ adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2"
   n <- length(y)
   # Get the corresponding semi-metric
   d <- get(paste("d_", d, sep = ""))
-  # Compute the d matrix of the training curves "curves"
+  # Compute the semi-metric matrix of the training curves "curves"
   d_curves <- d(curves, curves, ...)
   # Compute the bandwidth matrix with the function H
   H_set <- H(d_curves, h_length)
@@ -107,11 +115,12 @@ adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2"
   # Perform prediction on the test set
   if(prediction){
     h_AE_pred <- h_AE
-    d2 <- d(curves, pred_curves, ...)
+    # The semi-metric matrix for the interaction between train and test set curves
+    d_test <- d(curves, pred_curves, ...)
     func_kernel_weight_pred <- c()
     # Calculate the functional kernel weights with the selected bandwidths
     for(m in 1:n){
-      func_kernel_weight <- K(d2[m,]/h_AE_pred[m])
+      func_kernel_weight <- K(d_test[m,]/h_AE_pred[m])
       func_kernel_weight_pred <- rbind(func_kernel_weight_pred, func_kernel_weight)
     }
     dnom_pred <- apply(func_kernel_weight_pred, 2, sum)
@@ -124,7 +133,7 @@ adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2"
       for (i in bool_vec){
         index_AE <- order(eval_mat[i,])[index]
         h_AE_pred[i] <- H_set[i, index_AE]
-        func_kernel_weight <- K(d2[i,]/h_AE_pred[i])
+        func_kernel_weight <- K(d_test[i,]/h_AE_pred[i])
         func_kernel_weight_pred[i,] <- func_kernel_weight
       }
       dnom_pred <- apply(func_kernel_weight_pred, 2, sum)
@@ -139,7 +148,7 @@ adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2"
           for(i in bool_vec){
             h_AE_pred[i] <- H_set[i, h_length]*1.05
             H_set[i, h_length] <- H_set[i, h_length]*1.05
-            func_kernel_weight <- K(d2[i,]/h_AE_pred[i])
+            func_kernel_weight <- K(d_test[i,]/h_AE_pred[i])
             func_kernel_weight_pred[i,] <- func_kernel_weight
           }
           dnom_pred <- apply(func_kernel_weight_pred, 2, sum)
@@ -153,17 +162,15 @@ adaptive_functional_regression <- function(y, curves, pred_curves, ..., d = "L2"
     numerator_pred <- func_kernel_weight_pred * y
     y_hat_pred <- apply(numerator_pred, 2, sum)/dnom_pred
     y_hat_pred[is.nan(y_hat_pred)] <- 0
-    # Return several quantities of interest
+    # Return several quantities of interest (especially predicted responses)
     return(list(y_estimated = y_hat_AE, 
-                y_predicted = y_hat_pred, h_local_pred = h_AE_pred,
-                H_n = H_set, est_variance = est_error, A_hat = A_hat, V_hat = V_hat))
+                y_predicted = y_hat_pred, h_local_pred = h_AE_pred, est_variance = est_error, A_hat = A_hat, V_hat = V_hat))
 
   }
   
   else {
-    # Return several quantities of interest in the case of no prediction as well
-    return(list(y_estimated = y_hat_AE, h_local = h_AE,
-                H_n = H_set, est_variance = est_error))
+    # Return several quantities of interest without predicted responses
+    return(list(y_estimated = y_hat_AE, h_local = h_AE, est_variance = est_error))
   }
 }
 

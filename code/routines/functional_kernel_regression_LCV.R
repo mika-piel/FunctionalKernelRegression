@@ -1,4 +1,4 @@
-functional_kernel_regression_LCV <- function(y, curves, pred_curves, ..., d = "deriv", kernel = "box", h_length=20, tri_weight=TRUE)
+functional_kernel_regression_LCV <- function(y, curves, pred_curves, ..., d = "deriv", kernel = "triangle", h_length=20, tri_weight=TRUE)
 {
   # This function performs functional kernel regression with
   # local cross-validated bandwidths automatically selected
@@ -146,14 +146,12 @@ functional_kernel_regression_LCV <- function(y, curves, pred_curves, ..., d = "d
       numerator_pred <- func_kernel_weight_pred * y
       y_hat_pred <- apply(numerator_pred, 2, sum)/dnom_pred
       y_hat_pred[is.nan(y_hat_pred)] <- 0
-      # Return several quantities of interest
+      # Return several quantities of interest (especially predicted responses)
       return(list(y_estimated = y_hat_LCV, 
-                  y_predicted = y_hat_pred, h_local_pred = h_LCV_pred, H_n = H_set))
+                  y_predicted = y_hat_pred, h_local_pred = h_LCV_pred))
   }
   else {
-    # Return several quantities of interest in the case of no prediction as well
-    # except of course predicted responses
-    return(list(y_estimated = y_hat_LCV, h_local = h_LCV,
-                H_n = H_set))
+    # Return the estimated training responses and the locally chosen bandwidths
+    return(list(y_estimated = y_hat_LCV, h_local = h_LCV))
   }
 }
